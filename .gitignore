@@ -1,0 +1,13 @@
+# data & models
+*.csv
+*.pkl
+saved_models/
+
+# python junk
+__pycache__/
+*.pyc
+.env
+
+# IDE
+.vscode/
+.idea/
