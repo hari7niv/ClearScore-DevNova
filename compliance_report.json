@@ -1,0 +1,30 @@
+{
+  "report_date": "2026-04-29T15:42:05.081321",
+  "model_version": "1.0",
+  "test_set_size": 61503,
+  "model_type": "XGBoost Classifier",
+  "protected_attributes": [
+    "CODE_GENDER"
+  ],
+  "fairness_metrics": {
+    "demographic_parity_difference": 0.04194366062461141,
+    "equalized_odds_difference": 0.15475627070515854,
+    "four_fifths_rule_status": "PASS"
+  },
+  "performance_metrics": {
+    "accuracy": 0.9136627481586264,
+    "precision": 0.3837733419188667,
+    "recall": 0.120428369367549,
+    "f1_score": 0.18332820670562905,
+    "roc_auc": 0.7530429720418845
+  },
+  "decision_threshold": 0.3,
+  "approval_rate": 0.025250800773945987,
+  "compliance_status": {
+    "transparency": "MET - SHAP values provided for all decisions",
+    "fairness_tested": "MET - Demographic parity and equalized odds tested",
+    "audit_trail": "MET - Tamper-evident SHA-256 hash chain maintained",
+    "data_privacy": "MET - No PII stored in model outputs",
+    "explainability": "MET - Per-applicant explanations generated"
+  }
+}
