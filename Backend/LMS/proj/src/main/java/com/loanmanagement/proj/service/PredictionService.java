@@ -20,12 +20,17 @@ import com.loanmanagement.proj.dto.LoanRequestDTO;
 public class PredictionService {
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final CsvCreditHistoryService csvCreditHistoryService;
 
     @Value("${model.service.url:http://localhost:5000}")
     private String modelServiceUrl;
 
     @Value("${csv.predictor.url:http://localhost:8000}")
     private String csvPredictorUrl;
+
+    public PredictionService(CsvCreditHistoryService csvCreditHistoryService) {
+        this.csvCreditHistoryService = csvCreditHistoryService;
+    }
 
     public Map<String, Object> predict(LoanRequestDTO request) {
         try {
@@ -64,49 +69,15 @@ public class PredictionService {
     }
 
     public Map<String, Object> predictFromCsv(int userId, double loanAmount) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("user_id", userId);
-            payload.put("loan_amount", loanAmount);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    csvPredictorUrl + "/predict_csv",
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            Map<String, Object> body = response.getBody();
-            if (body == null) {
-                throw new RuntimeException("Empty response from CSV prediction service");
-            }
-            if (body.containsKey("error")) {
-                throw new RuntimeException(String.valueOf(body.get("error")));
-            }
-            return body;
-        } catch (Exception ex) {
-            throw new RuntimeException("CSV prediction service unavailable: " + ex.getMessage(), ex);
-        }
+        return csvCreditHistoryService.predict(userId, loanAmount);
     }
 
     public Map<String, Object> getUserProfile(int csvId) {
-        try {
-            ResponseEntity<Map> response = restTemplate.getForEntity(
-                    csvPredictorUrl + "/user_profile?user_id=" + csvId,
-                    Map.class
-            );
-            Map<String, Object> body = response.getBody();
-            if (body == null || body.containsKey("error")) {
-                throw new RuntimeException(body != null ? String.valueOf(body.get("error")) : "No user data");
-            }
-            return body;
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to fetch user profile from CSV: " + ex.getMessage(), ex);
-        }
+        return csvCreditHistoryService.getUserProfile(csvId);
+    }
+
+    public int resolveCsvUserId(String authUserId) {
+        return csvCreditHistoryService.resolveCsvUserId(authUserId);
     }
 
     public List<String> getPlainLanguageReasons(Map<String, BigDecimal> shapValues, String decision) {

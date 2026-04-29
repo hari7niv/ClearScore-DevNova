@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getCsvStats, getAuditStats } from '../api'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 
 export default function DashboardPage() {
   const [csvStats, setCsvStats] = useState(null)
@@ -32,6 +32,11 @@ export default function DashboardPage() {
   const rejected = csvStats?.rejected ?? 0
   const threshold = csvStats?.threshold ?? '—'
 
+  const probabilityData = csvStats?.probability_distribution || []
+  const decisionsOverTime = csvStats?.decisions_over_time || []
+  const genderData = csvStats?.fairness_by_gender || []
+  const datasets = csvStats?.datasets || {}
+
   // Income fairness data for chart
   const incomeData = (csvStats?.fairness_by_income || []).map(item => ({
     segment: item.group,
@@ -52,6 +57,21 @@ export default function DashboardPage() {
           </p>
         </div>
       </header>
+
+      <div className="card mb-24">
+        <h3 className="card-label">Dataset Connection</h3>
+        <div className="dataset-grid">
+          {['bureau.csv', 'bureau_balance.csv', 'previous_application.csv', 'installments_payments.csv'].map((name) => (
+            <div className="dataset-item" key={name}>
+              <span className={`status-pill ${datasets[name]?.found ? 'pill-approved' : 'pill-review'}`}>
+                {datasets[name]?.found ? 'Loaded' : 'Missing'}
+              </span>
+              <strong>{name}</strong>
+              <p>{Number(datasets[name]?.rows_loaded || 0).toLocaleString()} rows</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Trust Assessment + Data Impartiality */}
       <div className="grid-2-1 mb-24">
@@ -119,6 +139,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <div className="grid-3 mb-24">
+        {genderData.map((item) => (
+          <div className="kpi-card" key={item.group}>
+            <span className="kpi-label">{item.group} Approval Rate</span>
+            <span className="kpi-value">{Number(item.approval_rate || 0).toFixed(1)}%</span>
+            <span className="kpi-status">{item.approved} approved / {item.total} applicants</span>
+          </div>
+        ))}
+        <div className="kpi-card">
+          <span className="kpi-label">Demo Positioning</span>
+          <span className="kpi-status">{csvStats?.data_note || 'We reconstruct applicant history using related datasets and simulate decision tracking over time.'}</span>
+        </div>
+      </div>
+
       {/* KPI Strip */}
       <div className="grid-4 mb-24">
         <div className="kpi-card">
@@ -175,6 +209,46 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             ) : (
               <div className="empty-chart">Loading application data from CSV...</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2 mb-24">
+        <div className="card">
+          <h3 className="card-label">Probability Distribution</h3>
+          <div className="chart-wrapper">
+            {probabilityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={probabilityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="bucket" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }} />
+                  <Bar dataKey="count" fill="#fbbf24" radius={[6, 6, 0, 0]} name="Decisions" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty-chart">Loading probability distribution...</div>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <h3 className="card-label">Decisions Over Time</h3>
+          <div className="chart-wrapper">
+            {decisionsOverTime.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={decisionsOverTime}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }} />
+                  <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={3} name="Approved" />
+                  <Line type="monotone" dataKey="rejected" stroke="#f87171" strokeWidth={3} name="Rejected" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty-chart">Loading decision trend...</div>
             )}
           </div>
         </div>

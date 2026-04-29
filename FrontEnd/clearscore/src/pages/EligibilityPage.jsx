@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { predictLoan, getCsvProfile } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function EligibilityPage() {
   const { user } = useAuth()
@@ -38,6 +39,8 @@ export default function EligibilityPage() {
   const topFeatures = result?.top_features || []
   const reasons = result?.reasons || []
   const nextSteps = result?.next_steps || []
+  const timeline = result?.timeline || profile?.timeline || []
+  const riskEvolution = result?.risk_evolution || profile?.risk_evolution || []
 
   return (
     <div className="page-content">
@@ -191,10 +194,44 @@ export default function EligibilityPage() {
         </div>
       </div>
 
+      <div className="grid-2 mt-24">
+        <div className="card">
+          <h3 className="card-label">CREDIT HISTORY TIMELINE</h3>
+          <div className="timeline-list">
+            {timeline.slice(0, 8).map((item, index) => (
+              <div className="timeline-item" key={`${item.date}-${index}`}>
+                <span className="timeline-year">{item.year}</span>
+                <div>
+                  <strong>{item.event}</strong>
+                  <p>{item.detail} {item.amount ? `• ₹${Number(item.amount).toLocaleString()}` : ''}</p>
+                </div>
+              </div>
+            ))}
+            {timeline.length === 0 && <p className="muted-text">Timeline appears after your CSV profile loads.</p>}
+          </div>
+        </div>
+        <div className="card">
+          <h3 className="card-label">RISK EVOLUTION</h3>
+          <div className="chart-wrapper">
+            {riskEvolution.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={riskEvolution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="year" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }} />
+                  <Line type="monotone" dataKey="riskScore" stroke="#fbbf24" strokeWidth={3} name="Risk score" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : <div className="empty-chart">Loading risk evolution...</div>}
+          </div>
+        </div>
+      </div>
+
       <div className="banner-card mt-24">
         <div>
-          <h3>100% Real Data Driven</h3>
-          <p>Your profile is fetched from the credit database. Only the loan amount is your input — everything else is real data.</p>
+          <h3>Credit History Reconstruction</h3>
+          <p>{profile?.data_note || 'We reconstruct applicant history using related datasets and simulate decision tracking over time.'}</p>
         </div>
       </div>
     </div>

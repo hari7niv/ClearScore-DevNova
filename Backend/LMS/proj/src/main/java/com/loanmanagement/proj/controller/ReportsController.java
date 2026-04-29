@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.loanmanagement.proj.entity.FairnessMetric;
+import com.loanmanagement.proj.service.CsvCreditHistoryService;
 import com.loanmanagement.proj.service.FairnessService;
 
 @RestController
@@ -19,9 +20,12 @@ import com.loanmanagement.proj.service.FairnessService;
 public class ReportsController {
 
     private final FairnessService fairnessService;
+    private final CsvCreditHistoryService csvCreditHistoryService;
 
-    public ReportsController(FairnessService fairnessService) {
+    public ReportsController(FairnessService fairnessService,
+                             CsvCreditHistoryService csvCreditHistoryService) {
         this.fairnessService = fairnessService;
+        this.csvCreditHistoryService = csvCreditHistoryService;
     }
 
     @GetMapping("/fairness")
@@ -50,11 +54,6 @@ public class ReportsController {
 
     @GetMapping("/csv-stats")
     public Map getCsvStats() {
-        try {
-            org.springframework.web.client.RestTemplate rt = new org.springframework.web.client.RestTemplate();
-            return rt.getForObject("http://localhost:8000/csv_stats", Map.class);
-        } catch (Exception ex) {
-            return Map.of("error", "ML service unavailable: " + ex.getMessage());
-        }
+        return csvCreditHistoryService.getDashboardStats();
     }
 }

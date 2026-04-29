@@ -442,6 +442,52 @@ a:hover { text-decoration: underline; }
 .profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
 .profile-fields p { color: var(--text-heading); font-size: 14px; margin-top: 4px; }
 .profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.timeline-list { display: flex; flex-direction: column; gap: 16px; }
+.timeline-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(51,65,85,0.5);
+}
+.timeline-item:last-child { border-bottom: 0; }
+.timeline-year {
+  color: var(--emerald);
+  font-weight: 800;
+  font-size: 13px;
+  padding-top: 2px;
+}
+.timeline-item strong {
+  color: var(--text-heading);
+  text-transform: capitalize;
+}
+.timeline-item p {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.dataset-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dataset-item strong {
+  color: var(--text-heading);
+  font-size: 13px;
+}
+.dataset-item p {
+  color: var(--text-muted);
+  font-size: 12px;
+}
 
 /* ===== ICONS ===== */
 .icon-emerald { color: var(--emerald); }
@@ -460,6 +506,7 @@ a:hover { text-decoration: underline; }
   .main-content { margin-left: 0; }
   .eligibility-grid, .auth-container, .grid-2, .grid-2-1, .bento-2 { grid-template-columns: 1fr; }
   .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .dataset-grid { grid-template-columns: 1fr 1fr; }
   .decision-metrics { grid-template-columns: 1fr; }
   .form-row-2 { grid-template-columns: 1fr; }
   .page-header { flex-direction: column; }
@@ -468,6 +515,7 @@ a:hover { text-decoration: underline; }
 @media (max-width: 640px) {
   .page-content { padding: 16px 12px 48px; }
   .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .dataset-grid { grid-template-columns: 1fr; }
   .page-header h1 { font-size: 24px; }
   .profile-info { flex-direction: column; }
   .profile-fields { grid-template-columns: 1fr; }

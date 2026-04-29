@@ -19,6 +19,8 @@ export default function ReportsPage() {
   const totalDecisions = csvStats?.total_decisions
   const approved = csvStats?.approved ?? 0
   const rejected = csvStats?.rejected ?? 0
+  const genderData = csvStats?.fairness_by_gender || []
+  const probabilityData = csvStats?.probability_distribution || []
 
   // Income chart data from CSV
   const incomeData = (csvStats?.fairness_by_income || []).map(item => ({
@@ -62,6 +64,41 @@ export default function ReportsPage() {
           <span className={`kpi-status ${approvalRate >= 40 ? 'kpi-pass' : 'kpi-fail'}`}>
             {approved} approved / {rejected} rejected
           </span>
+        </div>
+      </div>
+
+      <div className="grid-2 mb-24">
+        <div className="card">
+          <h3 className="card-label">FAIRNESS BY GENDER</h3>
+          <div className="chart-wrapper">
+            {genderData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={genderData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="group" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} unit="%" domain={[0, 100]} />
+                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }} />
+                  <Bar dataKey="approval_rate" fill="#60a5fa" radius={[6,6,0,0]} name="Approval %" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <div className="empty-chart">Loading gender fairness data...</div>}
+          </div>
+        </div>
+        <div className="card">
+          <h3 className="card-label">PROBABILITY DISTRIBUTION</h3>
+          <div className="chart-wrapper">
+            {probabilityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={probabilityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="bucket" stroke="#94a3b8" fontSize={12} />
+                  <YAxis stroke="#94a3b8" fontSize={12} />
+                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0' }} />
+                  <Bar dataKey="count" fill="#fbbf24" radius={[6,6,0,0]} name="Decisions" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <div className="empty-chart">Loading probability data...</div>}
+          </div>
         </div>
       </div>
 

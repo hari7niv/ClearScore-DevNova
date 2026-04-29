@@ -2,6 +2,7 @@ import pickle
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI
+from pathlib import Path
 
 with open("saved_models/credit_model_latest.pkl", "rb") as f:
     model = pickle.load(f)
@@ -16,7 +17,8 @@ FEATURE_NAMES = meta["feature_names"]
 THRESHOLD = meta["optimal_threshold"]
 
 
-df = pd.read_csv("C:\\Users\\Hari\\Desktop\\Projects\\Fullstack\\ClearScore-DevNova\\ML\\Data\\home-credit-default-risk\\application_train.csv")
+DATA_ROOT = Path(__file__).resolve().parent / "ML" / "Data"
+df = pd.read_csv(DATA_ROOT / "home-credit-default-risk" / "application_train.csv")
 
 # same preprocessing you used
 df = df.dropna(thresh=len(df)*0.5, axis=1)
@@ -376,4 +378,3 @@ def loan_curve(user_id: int):
         "amounts": amounts,
         "probabilities": probs
     }
-

@@ -21,6 +21,7 @@ import com.loanmanagement.proj.repository.CreditDecisionRepository;
 import com.loanmanagement.proj.repository.LoanApplicationRepository;
 import com.loanmanagement.proj.repository.ShapExplanationRepository;
 import com.loanmanagement.proj.service.AuditService;
+import com.loanmanagement.proj.service.DecisionAuditService;
 
 @RestController
 @RequestMapping("/api/audit")
@@ -32,23 +33,26 @@ public class AuditController {
     private final CreditDecisionRepository decisionRepository;
     private final ShapExplanationRepository shapRepository;
     private final AuditService auditService;
+    private final DecisionAuditService decisionAuditService;
 
     public AuditController(AuditTrailRepository auditRepository,
                            LoanApplicationRepository applicationRepository,
                            CreditDecisionRepository decisionRepository,
                            ShapExplanationRepository shapRepository,
-                           AuditService auditService) {
+                           AuditService auditService,
+                           DecisionAuditService decisionAuditService) {
         this.auditRepository = auditRepository;
         this.applicationRepository = applicationRepository;
         this.decisionRepository = decisionRepository;
         this.shapRepository = shapRepository;
         this.auditService = auditService;
+        this.decisionAuditService = decisionAuditService;
     }
 
     @GetMapping("/logs")
     public List<Map<String, Object>> getAllAuditLogs() {
         List<AuditTrail> audits = auditRepository.findAllByOrderByTimestampDesc();
-        return audits.stream().map(audit -> {
+        List<Map<String, Object>> entries = new java.util.ArrayList<>(audits.stream().map(audit -> {
             Map<String, Object> entry = new HashMap<>();
             entry.put("auditId", audit.getAuditId());
             entry.put("actionType", audit.getActionType());
@@ -76,7 +80,17 @@ public class AuditController {
             }
 
             return entry;
-        }).toList();
+        }).toList());
+
+        for (Map<String, Object> dbEntry : decisionAuditService.getAllDecisionAudits()) {
+            Map<String, Object> entry = new HashMap<>(dbEntry);
+            entry.put("applicationId", null);
+            entry.put("actionType", "CSV_DECISION_TRACKED");
+            entry.put("creditAmount", dbEntry.get("loanAmount"));
+            entry.put("csvAudit", true);
+            entries.add(entry);
+        }
+        return entries;
     }
 
     @GetMapping("/logs/{applicationId}")
@@ -121,12 +135,19 @@ public class AuditController {
 
         long totalApplications = applicationRepository.count();
         List<CreditDecision> allDecisions = decisionRepository.findAll();
+        List<Map<String, Object>> csvAudits = decisionAuditService.getAllDecisionAudits();
         long approvedCount = allDecisions.stream()
                 .filter(d -> d.getDecision() == CreditDecision.Decision.APPROVED)
                 .count();
+        long csvApprovedCount = csvAudits.stream()
+                .filter(d -> "APPROVED".equals(String.valueOf(d.get("decision"))))
+                .count();
 
-        double approvalRate = totalApplications > 0
-                ? (double) approvedCount / totalApplications * 100
+        long totalDecisions = totalApplications + csvAudits.size();
+        long totalApproved = approvedCount + csvApprovedCount;
+
+        double approvalRate = totalDecisions > 0
+                ? (double) totalApproved / totalDecisions * 100
                 : 0;
 
         double avgScore = applicationRepository.findAll().stream()
@@ -140,13 +161,13 @@ public class AuditController {
                 .map(LoanApplication::getCreditAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        stats.put("totalApplications", totalApplications);
-        stats.put("approvedCount", approvedCount);
-        stats.put("rejectedCount", totalApplications - approvedCount);
+        stats.put("totalApplications", totalDecisions);
+        stats.put("approvedCount", totalApproved);
+        stats.put("rejectedCount", totalDecisions - totalApproved);
         stats.put("approvalRate", new BigDecimal(approvalRate).setScale(1, RoundingMode.HALF_UP));
         stats.put("avgCreditScore", Math.round(avgScore));
         stats.put("totalVolume", totalVolume);
-        stats.put("auditCount", auditRepository.count());
+        stats.put("auditCount", auditRepository.count() + csvAudits.size());
 
         return stats;
     }

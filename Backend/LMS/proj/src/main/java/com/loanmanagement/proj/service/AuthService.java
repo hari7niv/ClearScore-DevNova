@@ -1,6 +1,8 @@
 package com.loanmanagement.proj.service;
 
 import com.loanmanagement.proj.dto.AuthRequestDTO;
+import com.loanmanagement.proj.entity.UserAccount;
+import com.loanmanagement.proj.repository.UserAccountRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -8,44 +10,60 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
 
-    private final Map<String, Account> accountsByEmail = new ConcurrentHashMap<>();
+    private final UserAccountRepository userAccountRepository;
     private final JwtTokenService jwtTokenService;
+    private final CsvCreditHistoryService csvCreditHistoryService;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public AuthService(JwtTokenService jwtTokenService) {
+    public AuthService(UserAccountRepository userAccountRepository,
+                       JwtTokenService jwtTokenService,
+                       CsvCreditHistoryService csvCreditHistoryService) {
+        this.userAccountRepository = userAccountRepository;
         this.jwtTokenService = jwtTokenService;
+        this.csvCreditHistoryService = csvCreditHistoryService;
     }
 
     public AuthResult register(AuthRequestDTO request) {
-        if (accountsByEmail.containsKey(request.getEmail())) {
+        String email = normalizeEmail(request.getEmail());
+        if (email.isBlank() || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Email and password are required");
+        }
+        if (userAccountRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email already registered");
         }
         String userId = UUID.randomUUID().toString();
         String salt = randomSalt();
         String passwordHash = hashPassword(request.getPassword(), salt);
-        Role role = resolveRole(request.getEmail(), request.getRole());
-        Account account = new Account(userId, request.getName(), request.getEmail(), salt, passwordHash, role);
-        accountsByEmail.put(request.getEmail(), account);
-        String token = jwtTokenService.createToken(userId, request.getEmail(), request.getName(), role.name());
-        return new AuthResult(userId, request.getName(), request.getEmail(), token, role.name());
+        Role role = resolveRole(email, request.getRole());
+        UserAccount account = new UserAccount();
+        account.setUserId(userId);
+        account.setCsvUserId(csvCreditHistoryService.resolveCsvUserId(userId));
+        account.setName(request.getName());
+        account.setEmail(email);
+        account.setPasswordSalt(salt);
+        account.setPasswordHash(passwordHash);
+        account.setRole(role.name());
+        account.setCreatedAt(java.time.LocalDateTime.now());
+        userAccountRepository.save(account);
+        String token = jwtTokenService.createToken(userId, email, request.getName(), role.name());
+        return new AuthResult(userId, request.getName(), email, token, role.name());
     }
 
     public AuthResult login(AuthRequestDTO request) {
-        Account account = Optional.ofNullable(accountsByEmail.get(request.getEmail()))
+        String email = normalizeEmail(request.getEmail());
+        UserAccount account = userAccountRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-        String passwordHash = hashPassword(request.getPassword(), account.salt);
-        if (!passwordHash.equals(account.passwordHash)) {
+        String passwordHash = hashPassword(request.getPassword(), account.getPasswordSalt());
+        if (!passwordHash.equals(account.getPasswordHash())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
-        String token = jwtTokenService.createToken(account.userId, account.email, account.name, account.role.name());
-        return new AuthResult(account.userId, account.name, account.email, token, account.role.name());
+        String token = jwtTokenService.createToken(account.getUserId(), account.getEmail(), account.getName(), account.getRole());
+        return new AuthResult(account.getUserId(), account.getName(), account.getEmail(), token, account.getRole());
     }
 
     public String resolveUserId(String bearerToken) {
@@ -70,6 +88,10 @@ public class AuthService {
         }
     }
 
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
+    }
+
     private enum Role {
         USER,
         ADMIN
@@ -89,8 +111,6 @@ public class AuthService {
         }
         return Role.USER;
     }
-
-    private record Account(String userId, String name, String email, String salt, String passwordHash, Role role) {}
 
     public record AuthResult(String userId, String name, String email, String accessToken, String role) {}
 }

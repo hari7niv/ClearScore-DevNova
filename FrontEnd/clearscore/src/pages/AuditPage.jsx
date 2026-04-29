@@ -79,13 +79,14 @@ export default function AuditPage() {
       <div className="card table-card mb-24">
         <div className="table-scroll">
           <table className="audit-table">
-            <thead><tr><th>ID</th><th>Income</th><th>Score</th><th>Result</th><th className="text-right">Time</th></tr></thead>
+            <thead><tr><th>ID</th><th>User</th><th>Loan Amount</th><th>Probability</th><th>Result</th><th className="text-right">Time</th></tr></thead>
             <tbody>
               {paged.map((log) => (
                 <tr key={log.auditId} className="audit-row" onClick={() => log.applicationId && toggleExpand(log.applicationId)}>
                   <td className="mono">#{log.applicationId ? `LN-${log.applicationId}` : log.auditId}</td>
-                  <td>{fmt(log.income)}</td>
-                  <td>{log.creditScore ?? '—'}</td>
+                  <td>{log.csvUserId || log.userId || log.user_id || '—'}</td>
+                  <td>{fmt(log.creditAmount ?? log.loanAmount ?? log.loan_amount)}</td>
+                  <td>{log.probability != null ? (Number(log.probability) * 100).toFixed(1) + '%' : '—'}</td>
                   <td>
                     <span className={`status-pill ${log.decision === 'APPROVED' ? 'pill-approved' : log.decision === 'REJECTED' ? 'pill-rejected' : 'pill-review'}`}>
                       {log.decision || 'PENDING'}
@@ -95,7 +96,7 @@ export default function AuditPage() {
                 </tr>
               ))}
               {paged.length === 0 && !loading && (
-                <tr><td colSpan={5} className="empty-table">No audit entries yet. Submit a loan application to generate records.</td></tr>
+                <tr><td colSpan={6} className="empty-table">No audit entries yet. Submit a loan application to generate records.</td></tr>
               )}
             </tbody>
           </table>

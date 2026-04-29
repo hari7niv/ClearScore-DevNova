@@ -31,6 +31,7 @@ import com.loanmanagement.proj.repository.LoanApplicantRepository;
 import com.loanmanagement.proj.repository.LoanApplicationRepository;
 import com.loanmanagement.proj.repository.ShapExplanationRepository;
 import com.loanmanagement.proj.service.AuditService;
+import com.loanmanagement.proj.service.DecisionAuditService;
 import com.loanmanagement.proj.service.PredictionService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +46,7 @@ public class LoanController {
     private final CreditDecisionRepository decisionRepository;
     private final ShapExplanationRepository shapRepository;
     private final AuditService auditService;
+    private final DecisionAuditService decisionAuditService;
     private final PredictionService predictionService;
 
     public LoanController(LoanApplicantRepository applicantRepository,
@@ -52,12 +54,14 @@ public class LoanController {
                           CreditDecisionRepository decisionRepository,
                           ShapExplanationRepository shapRepository,
                           AuditService auditService,
+                          DecisionAuditService decisionAuditService,
                           PredictionService predictionService) {
         this.applicantRepository = applicantRepository;
         this.applicationRepository = applicationRepository;
         this.decisionRepository = decisionRepository;
         this.shapRepository = shapRepository;
         this.auditService = auditService;
+        this.decisionAuditService = decisionAuditService;
         this.predictionService = predictionService;
     }
 
@@ -71,10 +75,9 @@ public class LoanController {
 
         int csvId;
         try {
-            csvId = Integer.parseInt(authUserId) + 1000;
+            csvId = predictionService.resolveCsvUserId(authUserId);
         } catch (NumberFormatException e) {
-            // If userId is not numeric, hash it to a CSV index
-            csvId = 1001 + Math.abs(authUserId.hashCode() % 10000);
+            csvId = predictionService.resolveCsvUserId(authUserId);
         }
 
         // Call ML service to get user info from CSV
@@ -94,9 +97,9 @@ public class LoanController {
         // Map to CSV row: JWT userId + 1000
         int csvId;
         try {
-            csvId = Integer.parseInt(authUserId) + 1000;
+            csvId = predictionService.resolveCsvUserId(authUserId);
         } catch (NumberFormatException e) {
-            csvId = 1001 + Math.abs(authUserId.hashCode() % 10000);
+            csvId = predictionService.resolveCsvUserId(authUserId);
         }
 
         double loanAmount;
@@ -112,8 +115,10 @@ public class LoanController {
 
         // Call the ML service which reads from CSV
         Map<String, Object> mlResult = predictionService.predictFromCsv(csvId, loanAmount);
+        var auditEntry = decisionAuditService.recordCsvDecision(authUserId, csvId, loanAmount, mlResult);
         mlResult.put("authUserId", authUserId);
         mlResult.put("csvMappedId", csvId);
+        mlResult.put("auditId", auditEntry.getAuditId());
         return mlResult;
     }
 
@@ -256,27 +261,30 @@ public class LoanController {
 
 
     @GetMapping("/history/me")
-    public List<PredictionHistoryDTO> getMyHistory(HttpServletRequest request) {
+    public List<Map<String, Object>> getMyHistory(HttpServletRequest request) {
         String userId = (String) request.getAttribute("authUserId");
         if (userId == null || userId.isBlank()) {
             throw new RuntimeException("Unauthorized");
         }
 
-        return applicationRepository.findByApplicant_UserIdOrderByAppliedAtDesc(userId)
+        List<Map<String, Object>> history = new ArrayList<>(decisionAuditService.getUserDecisionAudits(userId));
+        history.addAll(applicationRepository.findByApplicant_UserIdOrderByAppliedAtDesc(userId)
                 .stream()
                 .map(app -> {
                     CreditDecision decision = decisionRepository.findByApplication_ApplicationId(app.getApplicationId()).orElse(null);
-                    return new PredictionHistoryDTO(
-                            String.valueOf(app.getApplicationId()),
-                            app.getAppliedAt(),
-                            decision != null ? decision.getDecision().name() : "PENDING",
-                            decision != null ? decision.getProbability() : BigDecimal.ZERO,
-                            app.getCreditAmount(),
-                            app.getIncome(),
-                            decision != null ? "Use the recommendation from your latest prediction" : "No decision yet"
-                    );
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("applicationId", String.valueOf(app.getApplicationId()));
+                    item.put("appliedAt", app.getAppliedAt());
+                    item.put("decision", decision != null ? decision.getDecision().name() : "PENDING");
+                    item.put("probability", decision != null ? decision.getProbability() : BigDecimal.ZERO);
+                    item.put("loanAmount", app.getCreditAmount());
+                    item.put("income", app.getIncome());
+                    item.put("recommendation", decision != null ? "Use the recommendation from your latest prediction" : "No decision yet");
+                    item.put("source", "loan_application_table");
+                    return item;
                 })
-                .toList();
+                .toList());
+        return history;
     }
 
     // Get decision by application ID (for compliance officer)
