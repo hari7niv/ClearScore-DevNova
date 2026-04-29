@@ -1,0 +1,46 @@
+# Data & Models
+*.csv
+*.pkl
+*.pickle
+*.h5
+*.model
+*.joblib
+*.zip
+*.ipynb
+saved_models/
+ML/Data/
+
+# Node
+node_modules/
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Java
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Env files
+.env
+.env.local
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

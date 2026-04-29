@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LendAI - Fairness Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#131315",
+                    "on-secondary-container": "#aeb9d0",
+                    "surface-bright": "#39393b",
+                    "tertiary-fixed": "#fcdeb5",
+                    "on-secondary-fixed": "#111c2d",
+                    "primary-fixed": "#dae2fd",
+                    "on-primary-container": "#798098",
+                    "on-secondary": "#263143",
+                    "surface-container-low": "#1b1b1d",
+                    "on-primary-fixed": "#131b2e",
+                    "surface-variant": "#353436",
+                    "on-background": "#e4e2e4",
+                    "tertiary": "#dec29a",
+                    "on-primary-fixed-variant": "#3f465c",
+                    "on-primary": "#283044",
+                    "surface-dim": "#131315",
+                    "secondary": "#bcc7de",
+                    "on-tertiary-fixed-variant": "#574425",
+                    "surface-container-lowest": "#0e0e10",
+                    "primary-fixed-dim": "#bec6e0",
+                    "inverse-on-surface": "#303032",
+                    "on-tertiary-fixed": "#271901",
+                    "tertiary-container": "#231500",
+                    "on-tertiary-container": "#957d5a",
+                    "on-secondary-fixed-variant": "#3c475a",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "inverse-primary": "#565e74",
+                    "secondary-fixed": "#d8e3fb",
+                    "secondary-fixed-dim": "#bcc7de",
+                    "surface-container-high": "#2a2a2b",
+                    "surface-tint": "#bec6e0",
+                    "tertiary-fixed-dim": "#dec29a",
+                    "error-container": "#93000a",
+                    "primary": "#bec6e0",
+                    "inverse-surface": "#e4e2e4",
+                    "outline": "#909097",
+                    "surface-container-highest": "#353436",
+                    "primary-container": "#0f172a",
+                    "surface": "#131315",
+                    "on-tertiary": "#3e2d11",
+                    "on-surface": "#e4e2e4",
+                    "secondary-container": "#3e495d",
+                    "outline-variant": "#45464d",
+                    "surface-container": "#1f1f21",
+                    "on-surface-variant": "#c6c6cd",
+                    "on-error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-sm": "12px",
+                    "section-padding": "80px",
+                    "gutter": "24px",
+                    "stack-lg": "48px",
+                    "unit": "8px",
+                    "container-max": "1200px",
+                    "stack-md": "24px"
+            },
+            "fontFamily": {
+                    "label-caps": ["Manrope"],
+                    "body-lg": ["Manrope"],
+                    "h2": ["Manrope"],
+                    "h1": ["Manrope"],
+                    "input-text": ["Manrope"],
+                    "body-md": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h2": ["32px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "input-text": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0f172a;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#0f172a]/90 backdrop-blur-md border-b border-[#334155] flex justify-between items-center px-8 h-16 w-full">
+<div class="text-xl font-bold tracking-tighter text-white font-h1">LendAI</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="font-body-md text-sm tracking-wide font-medium text-slate-400 hover:text-emerald-400 transition-colors duration-200" href="#">Main Screen</a>
+<a class="font-body-md text-sm tracking-wide font-medium text-slate-400 hover:text-emerald-400 transition-colors duration-200" href="#">Audit Page</a>
+<a class="font-body-md text-sm tracking-wide font-medium text-emerald-400 border-b-2 border-emerald-400 pb-1 transition-colors duration-200" href="#">Fairness Page</a>
+</div>
+<button class="bg-[#334155] text-slate-100 font-label-caps px-6 py-2 rounded-lg active:scale-95 transition-transform hover:bg-[#475569]">
+            Check Eligibility
+        </button>
+</nav>
+<!-- Progress Indicator (Task Focused) -->
+<div class="fixed top-16 left-0 w-full h-1 bg-[#1e293b] z-40">
+<div class="h-full bg-emerald-400 w-3/4"></div>
+</div>
+<main class="pt-32 pb-section-padding px-4 max-w-container-max mx-auto min-h-screen">
+<!-- Header Section -->
+<header class="mb-stack-lg max-w-2xl">
+<span class="font-label-caps text-emerald-400 mb-stack-sm block uppercase">Ethics &amp; Transparency</span>
+<h1 class="font-h1 text-h1 text-white mb-stack-md">AI Fairness Protocol</h1>
+<p class="font-body-lg text-body-lg text-on-primary-container">We believe financial decisions should be blind to everything but your ability to succeed. Our AI is audited hourly for neutral decision-making.</p>
+</header>
+<!-- Insights Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Core Fairness Card -->
+<div class="md:col-span-2 bg-[#1e293b] p-stack-lg rounded-xl border border-[#334155] flex flex-col justify-between hover:border-emerald-400/50 transition-colors duration-300">
+<div>
+<div class="flex items-center gap-stack-sm mb-stack-md">
+<span class="material-symbols-outlined text-emerald-400" data-icon="verified_user">verified_user</span>
+<h2 class="font-h2 text-h2 text-white">Trust Assessment</h2>
+</div>
+<div class="space-y-stack-md">
+<div class="flex items-start gap-stack-sm">
+<span class="material-symbols-outlined text-emerald-400 mt-1" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-body-md text-white font-bold">No major bias detected</p>
+<p class="font-body-md text-on-primary-container text-sm">Models show 0.02% variance across all demographic testing cohorts.</p>
+</div>
+</div>
+<div class="flex items-start gap-stack-sm">
+<span class="material-symbols-outlined text-emerald-400 mt-1" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-body-md text-white font-bold">Fair approval across different groups</p>
+<p class="font-body-md text-on-primary-container text-sm">Parity maintained across age, location, and background datasets.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-stack-lg pt-stack-lg border-t border-[#334155]">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-slate-500">Last Audit: 12 minutes ago</span>
+<span class="font-label-caps text-emerald-400 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            System Live
+                        </span>
+</div>
+</div>
+</div>
+<!-- Visualization Card (Simplified) -->
+<div class="bg-[#1e293b] p-stack-lg rounded-xl border border-[#334155] relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-label-caps text-white mb-stack-lg">Data Impartiality</h3>
+<div class="flex flex-col gap-6">
+<div class="w-full bg-[#334155] h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-400 h-full w-[98%]"></div>
+</div>
+<div class="w-full bg-[#334155] h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-400 h-full w-[99%]"></div>
+</div>
+<div class="w-full bg-[#334155] h-1.5 rounded-full overflow-hidden">
+<div class="bg-emerald-400 h-full w-[97%]"></div>
+</div>
+</div>
+<p class="mt-stack-lg font-body-md text-on-primary-container text-sm">Our AI ignores non-financial metadata to focus purely on your merit.</p>
+</div>
+<div class="absolute -bottom-12 -right-12 opacity-5">
+<span class="material-symbols-outlined text-[160px]" data-icon="balance">balance</span>
+</div>
+</div>
+<!-- Secondary Insight -->
+<div class="bg-[#1e293b] p-stack-lg rounded-xl border border-[#334155] hover:border-emerald-400/50 transition-colors duration-300">
+<span class="material-symbols-outlined text-emerald-400 mb-stack-sm" data-icon="shield_person">shield_person</span>
+<h4 class="font-h2 text-lg text-white mb-stack-sm">Human Centric</h4>
+<p class="font-body-md text-on-primary-container text-sm">Decisions are cross-checked by expert underwriters if the AI flags an edge case.</p>
+</div>
+<!-- Secondary Insight -->
+<div class="bg-[#1e293b] p-stack-lg rounded-xl border border-[#334155] hover:border-emerald-400/50 transition-colors duration-300">
+<span class="material-symbols-outlined text-emerald-400 mb-stack-sm" data-icon="history_edu">history_edu</span>
+<h4 class="font-h2 text-lg text-white mb-stack-sm">Decision Logs</h4>
+<p class="font-body-md text-on-primary-container text-sm">Every calculation is stored in an immutable ledger for your privacy and review.</p>
+</div>
+<!-- Secondary Insight -->
+<div class="bg-[#1e293b] p-stack-lg rounded-xl border border-[#334155] hover:border-emerald-400/50 transition-colors duration-300">
+<span class="material-symbols-outlined text-emerald-400 mb-stack-sm" data-icon="gavel">gavel</span>
+<h4 class="font-h2 text-lg text-white mb-stack-sm">Global Compliance</h4>
+<p class="font-body-md text-on-primary-container text-sm">Aligning with GDPR and CCPA financial standards for algorithmic accountability.</p>
+</div>
+</div>
+<!-- Decorative Footer Image -->
+<section class="mt-stack-lg rounded-xl overflow-hidden h-[300px] border border-[#334155]">
+<img alt="Digital abstract visualization of neutral data flow" class="w-full h-full object-cover grayscale opacity-50 hover:grayscale-0 transition-all duration-700" data-alt="abstract digital artwork showing smooth flowing lines of light in deep navy and emerald green representing secure data flow and balance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDU2Ayf3DmCWlwsR-eizrPZMqc_UoB5XU718bEUAvJOfzybcsDTPAOhUcPC2iNIvZgHL9ekz9DpMUzKltcgQJcJA3evf_exeJ0JJFHMxy2lHMPFRh413kjB21WYU-ywaMsehztili31EJZYT1oyV8yFU4TiJRYwm08rbTlFecX5hHyA0zc9nUYv3tluYXzxmAShRutVCVEtxWwgeQjaW3YO1ZPTlbu2-DR8Ug7NcwXdZurR-rqZOW4sFbOjbJvxzB1LcT31aSf8zsoS"/>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0f172a] border-t border-[#334155] w-full py-12">
+<div class="flex flex-col items-center justify-center gap-6 max-w-7xl mx-auto px-8">
+<p class="font-label-caps text-xs uppercase tracking-widest text-slate-500">© 2024 LendAI. All decisions are securely logged.</p>
+<div class="flex gap-8">
+<a class="font-label-caps text-xs uppercase tracking-widest text-slate-500 hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-caps text-xs uppercase tracking-widest text-slate-500 hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="font-label-caps text-xs uppercase tracking-widest text-slate-500 hover:text-white transition-colors" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

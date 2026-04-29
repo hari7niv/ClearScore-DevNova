@@ -1,0 +1,3 @@
+/* Base reset - additional resets handled in App.css */
+:root { color-scheme: dark; }
+#root { min-height: 100vh; }
