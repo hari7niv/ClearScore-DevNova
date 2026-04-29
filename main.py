@@ -3,17 +3,6 @@ import pandas as pd
 import numpy as np
 from fastapi import FastAPI
 
-# main.py
-
-import pickle
-import pandas as pd
-import numpy as np
-from fastapi import FastAPI
-
-# ===============================
-# LOAD MODEL + EXPLAINER + META
-# ===============================
-
 with open("saved_models/credit_model_latest.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -26,9 +15,6 @@ with open("saved_models/preprocessing_info_latest.pkl", "rb") as f:
 FEATURE_NAMES = meta["feature_names"]
 THRESHOLD = meta["optimal_threshold"]
 
-# ===============================
-# LOAD DATA (FOR SAMPLE PROFILE)
-# ===============================
 
 df = pd.read_csv("C:\\Users\\Hari\\Desktop\\Projects\\Fullstack\\ClearScore-DevNova\\ML\\Data\\home-credit-default-risk\\application_train.csv")
 
@@ -39,9 +25,6 @@ df = pd.get_dummies(df, drop_first=True)
 
 X = df.drop("TARGET", axis=1)
 
-# lock one sample for simulation
-# CURRENT_SAMPLE = X.sample(1).iloc[1].copy()
-
 feature_map = {
     "AMT_CREDIT": "Loan amount",
     "AMT_INCOME_TOTAL": "Applicant income",
@@ -51,9 +34,6 @@ feature_map = {
     "AMT_GOODS_PRICE": "Asset value of purchase"
 }
 
-# ===============================
-# HELPER FUNCTIONS
-# ===============================
 def get_user_by_id(user_id):
     base_id = 1001
     index = user_id - base_id
@@ -95,7 +75,6 @@ def generate_explanation(shap_vals, df_input):
     for i in reversed(top_idx):
         feature = feature_names[i]
         
-        # skip sensitive features
         if any(b in feature for b in banned_features):
             continue
         
@@ -110,9 +89,6 @@ def generate_explanation(shap_vals, df_input):
             break
     
     return reasons
-# ===============================
-# FASTAPI APP
-# ===============================
 
 app = FastAPI()
 
