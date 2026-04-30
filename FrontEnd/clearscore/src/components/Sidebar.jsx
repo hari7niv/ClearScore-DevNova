@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard,
   FileCheck,
@@ -13,12 +14,13 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/eligibility', label: 'Eligibility', icon: FileCheck },
   { to: '/audit', label: 'Audit Trail', icon: ClipboardList },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
+  // { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/profile', label: 'Profile', icon: UserCircle },
 ]
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -57,9 +59,14 @@ export default function Sidebar() {
             <span className="sidebar-user-role">{user?.role || 'USER'}</span>
           </div>
         </div>
-        <button className="sidebar-logout" onClick={handleLogout} title="Logout">
-          <LogOut size={16} />
-        </button>
+        <div className="sidebar-actions">
+          <button className="sidebar-theme-toggle" onClick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
+            <span className="material-symbols-outlined">{theme === 'dark' ? 'dark_mode' : 'light_mode'}</span>
+          </button>
+          <button className="sidebar-logout" onClick={handleLogout} title="Logout" aria-label="Logout">
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </aside>
   )

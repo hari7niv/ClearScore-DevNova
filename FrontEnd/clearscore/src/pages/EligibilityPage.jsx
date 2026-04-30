@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { predictLoan, getCsvProfile } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useDecision } from '../context/DecisionContext'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function EligibilityPage() {
   const { user } = useAuth()
+  const { setLatestDecision } = useDecision()
   const [loanAmount, setLoanAmount] = useState(500000)
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -20,6 +22,60 @@ export default function EligibilityPage() {
       .finally(() => setProfileLoading(false))
   }, [])
 
+  function estimateSafeMaxLoan(income, loan, probability) {
+    const annualIncome = Number(income || 0)
+    const requested = Number(loan || 0)
+    const confidence = Number(probability || 0)
+    if (!annualIncome) return null
+    const baseCap = annualIncome * 4
+    const multiplier = Math.max(0.7, Math.min(1.1, 0.85 + confidence / 250))
+    const estimatedMax = Math.min(baseCap * multiplier, Math.max(requested * 1.35, annualIncome * 1.5))
+    return Math.max(0, Math.round(estimatedMax))
+  }
+
+  function buildUserContextSnapshot(resultData, currentLoanAmount) {
+    const timelineItems = (resultData?.timeline || profile?.timeline || []).slice(0, 4).map((item) => ({
+      year: item.year,
+      event: item.event,
+      detail: item.detail,
+    }))
+    const riskPath = (resultData?.risk_evolution || profile?.risk_evolution || []).slice(-4).map((item) => ({
+      year: item.year,
+      riskScore: item.riskScore,
+    }))
+    const probability = Number(resultData?.probability || 0)
+    const currentLoan = Number(currentLoanAmount || 0)
+    const annualIncome = Number(profile?.income || 0)
+
+    return {
+      userId: profile?.user_id || user?.userId || null,
+      profileSummary: {
+        income: annualIncome,
+        creditAmount: Number(profile?.credit_amount || 0),
+        annuity: Number(profile?.annuity || 0),
+        age: Number(profile?.age || 0),
+        employmentYears: Number(profile?.employment_years || 0),
+        familyMembers: Number(profile?.family_members || 0),
+      },
+      decisionSummary: {
+        decision: resultData?.decision || '',
+        probability,
+        riskScore: Number(resultData?.risk_score || 0),
+        riskLabel: resultData?.risk_label || '',
+        currentLoanAmount: currentLoan,
+        estimatedMaxLoan: estimateSafeMaxLoan(annualIncome, currentLoan, probability),
+      },
+      timelineSummary: timelineItems,
+      riskEvolutionSummary: riskPath,
+      recommendation: resultData?.recommendation || '',
+      topQuestions: [
+        'Why was this decision made?',
+        'How can I improve it?',
+        'How much more can I borrow?'
+      ],
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
@@ -28,6 +84,18 @@ export default function EligibilityPage() {
     try {
       const res = await predictLoan(loanAmount)
       setResult(res.data)
+      const snapshot = buildUserContextSnapshot(res.data, loanAmount)
+      setLatestDecision({
+        decision: res.data?.decision,
+        probability: Number(res.data?.probability || 0),
+        reasons: Array.isArray(res.data?.reasons) ? res.data.reasons.filter(Boolean) : [],
+        loanAmount: Number(loanAmount || 0),
+        annualIncome: Number(profile?.income || 0),
+        riskScore: Number(res.data?.risk_score || 0),
+        riskLabel: res.data?.risk_label || '',
+        recommendation: res.data?.recommendation || '',
+        contextSnapshot: snapshot,
+      })
     } catch (err) {
       setError(err?.response?.data?.detail || 'Prediction failed. Ensure ML service (port 8000) and Spring Boot (port 8080) are running.')
     } finally {

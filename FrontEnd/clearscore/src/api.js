@@ -1,9 +1,15 @@
 import axios from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+const AI_BASE = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: API_BASE,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+const aiApi = axios.create({
+  baseURL: AI_BASE,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -76,5 +82,8 @@ export const getCsvStats = () =>
 export const getFairnessHistory = (startDate, endDate, attribute) =>
   api.get('/reports/fairness/history', { params: { startDate, endDate, attribute } })
 
+export const getAiExplanation = (payload) =>
+  aiApi.post('/ai/explain', payload)
+
 export default api
-export { API_BASE }
+export { API_BASE, AI_BASE }

@@ -8,6 +8,7 @@ export default function AuditPage() {
   const [expandedId, setExpandedId] = useState(null)
   const [detail, setDetail] = useState(null)
   const [page, setPage] = useState(0)
+  const [exporting, setExporting] = useState(null)
   const perPage = 10
 
   useEffect(() => {
@@ -34,6 +35,53 @@ export default function AuditPage() {
   const totalPages = Math.ceil(logs.length / perPage)
   const fmt = (v) => v == null ? '—' : '₹' + Number(v).toLocaleString()
 
+  function csvCell(value) {
+    const text = value == null ? '' : String(value)
+    return `"${text.replaceAll('"', '""')}"`
+  }
+
+  function downloadFile(content, fileName, type) {
+    const blob = new Blob([content], { type })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  function exportLogs(format) {
+    if (!logs.length || exporting) return
+
+    setExporting(format)
+    try {
+      const filenameBase = `audit-log-${new Date().toISOString().slice(0, 10)}`
+      if (format === 'csv') {
+        const rows = logs.map((log) => ({
+          auditId: log.auditId ?? '',
+          applicationId: log.applicationId ?? '',
+          userId: log.csvUserId || log.userId || log.user_id || '',
+          loanAmount: log.creditAmount ?? log.loanAmount ?? log.loan_amount ?? '',
+          probability: log.probability != null ? Number(log.probability) : '',
+          decision: log.decision || '',
+          timestamp: log.timestamp || '',
+        }))
+
+        const header = ['auditId', 'applicationId', 'userId', 'loanAmount', 'probability', 'decision', 'timestamp']
+        const csv = [header.join(',')]
+          .concat(rows.map((row) => header.map((key) => csvCell(row[key])).join(',')))
+          .join('\n')
+        downloadFile(csv, `${filenameBase}.csv`, 'text/csv;charset=utf-8;')
+      } else if (format === 'json') {
+        downloadFile(JSON.stringify(logs, null, 2), `${filenameBase}.json`, 'application/json;charset=utf-8;')
+      }
+    } finally {
+      setExporting(null)
+    }
+  }
+
   // CSV-based stats
   const totalDecisions = csvStats?.total_decisions ?? 0
   const approvalRate = csvStats?.approval_rate ?? '—'
@@ -48,11 +96,23 @@ export default function AuditPage() {
           <h1>Audit Registry</h1>
           <p className="page-desc">Transparent logging of AI decision-making. Statistics computed from {totalDecisions.toLocaleString()} real CSV records.</p>
         </div>
-        <div className="card card-security-badge">
-          <span className="material-symbols-outlined icon-emerald">verified_user</span>
-          <div>
-            <span className="form-label">SECURITY STATUS</span>
-            <strong>All decisions are securely logged</strong>
+        <div className="audit-actions-stack">
+          <div className="card card-security-badge">
+            <span className="material-symbols-outlined icon-emerald">verified_user</span>
+            <div>
+              <span className="form-label">SECURITY STATUS</span>
+              <strong>All decisions are securely logged</strong>
+            </div>
+          </div>
+          <div className="audit-export-actions">
+            <button className="btn-secondary" onClick={() => exportLogs('csv')} disabled={!logs.length || exporting !== null}>
+              <span className="material-symbols-outlined">download</span>
+              {exporting === 'csv' ? 'Exporting CSV…' : 'Download CSV'}
+            </button>
+            <button className="btn-secondary" onClick={() => exportLogs('json')} disabled={!logs.length || exporting !== null}>
+              <span className="material-symbols-outlined">code</span>
+              {exporting === 'json' ? 'Exporting JSON…' : 'Download JSON'}
+            </button>
           </div>
         </div>
       </header>

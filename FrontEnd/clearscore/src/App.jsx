@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { DecisionProvider } from './context/DecisionContext'
+import AIAssistantWidget from './components/AIAssistantWidget'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import LoginPage from './pages/LoginPage'
@@ -28,15 +31,18 @@ function AppLayout() {
     <div className="app-shell">
       <Sidebar />
       <main className="main-content">
-        <Routes>
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/eligibility" element={<ProtectedRoute><EligibilityPage /></ProtectedRoute>} />
-          <Route path="/audit" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        <div className="main-body">
+          <Routes>
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/eligibility" element={<ProtectedRoute><EligibilityPage /></ProtectedRoute>} />
+            <Route path="/audit" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
+            {/* <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} /> */}
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </div>
+        <AIAssistantWidget />
       </main>
     </div>
   )
@@ -44,8 +50,12 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppLayout />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <DecisionProvider>
+          <AppLayout />
+        </DecisionProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

@@ -8,3 +8,4 @@ xgboost
 shap
 pyjwt
 python-multipart
+httpx
