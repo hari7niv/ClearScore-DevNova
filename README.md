@@ -309,5 +309,3 @@ Then navigate to: **http://localhost:5173**
 ## Summary
 
 **The ClearScore-DevNova loan eligibility checker is ready for demonstration.** All three components (React frontend, Spring backend, Python ML service) are deployed, running, and can communicate with each other. Users can sign up, log in with JWT authentication, submit loan applications, receive AI-powered predictions with explainability insights, and view their prediction history. The system demonstrates a modern microservices architecture with proper separation of concerns between the UI layer, API layer, and ML inference layer.
-
-**Status**: 🟢 READY FOR PRESENTATION
