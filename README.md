@@ -1,311 +1,159 @@
-# ClearScore-DevNova: Loan Eligibility Checker - Integration Status
+# ClearScore: Explainable AI Loan Eligibility Platform
 
-## ✅ System Status: READY FOR PRESENTATION
+A full-stack loan eligibility checker that explains every decision. An XGBoost model predicts approval probability, SHAP shows which features drove the result, and every prediction is stored with a tamper-evident audit trail.
 
-All three components are running and communicating:
+**Why:** credit decisions often work as black boxes, so applicants and auditors cannot see why a loan was approved or rejected. ClearScore returns the decision together with the top factors behind it.
 
-### Running Services
-- **Python ML Service**: http://localhost:5000 ✅
-- **Spring Backend API**: http://localhost:8080/api ✅  
-- **React Frontend**: http://localhost:5173 ✅
+**Stack:** React, Vite, Chart.js, Spring Boot, Spring Security, FastAPI, XGBoost, SHAP, MySQL, JWT
 
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    REACT FRONTEND (5173)                     │
-│  • User Authentication (Signup/Login)                        │
-│  • Loan Application Form                                     │
-│  • JWT Token Storage (localStorage)                          │
-│  • Charts: Approval probability, Feature importance, History │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ (HTTP + Bearer Token)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│              SPRING BACKEND API (8080/api)                   │
-│  POST /auth/register        - User signup                    │
-│  POST /auth/login           - User login (returns JWT)       │
-│  POST /loan/apply           - Submit loan prediction         │
-│  GET  /loan/history/me      - User's prediction history      │
-│  POST /test/*               - Test endpoints                 │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ (HTTP JSON)
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│            PYTHON ML SERVICE (5000)                          │
-│  POST /predict              - XGBoost/SHAP predictions       │
-│  GET  /health               - Service health check           │
-└─────────────────────────────────────────────────────────────┘
-```
+> **Status:** working prototype built for learning and demonstration. See [Known Limitations](#known-limitations) before using it for anything real.
 
 ---
 
-## Implementation Details
+## Features
 
-### Frontend (React + Vite)
-- **Location**: `FrontEnd/clearscore/`
-- **Features**:
-  - Dark-themed responsive UI based on provided HTML design
-  - User authentication with JWT token persistence
-  - Loan eligibility form with 13 input fields
-  - Three interactive Chart.js visualizations
-  - Prediction history display
-  - Mobile-responsive layout
-
-### Backend (Spring Boot 4.0.6)
-- **Location**: `Backend/LMS/proj/`
-- **Components**:
-  - `AuthService`: In-memory user storage with SHA-256 password hashing
-  - `JwtTokenService`: HS256 token generation/verification (manual JSON parsing, no Jackson)
-  - `PredictionService`: HTTP client to Python ML service
-  - `LoanController`: REST endpoints for loan predictions
-  - `JwtAuthFilter`: Request-level authentication filter
-  - **Database**: MySQL `credit_scoring` (auto-schema creation)
-
-### ML Service (FastAPI + Python)
-- **Location**: `Backend/api/`
-- **Model**: XGBoost with SHAP explainability
-- **Features**:
-  - Feature engineering for loan data
-  - Probability predictions with configurable threshold
-  - SHAP feature importance (top 5 features)
-  - Risk scoring and affordability calculations
-  - Model health endpoint
+- **Explainable predictions:** approval probability, a 0-100 risk score, affordability calculation, and the top 5 SHAP feature attributions per decision
+- **JWT authentication:** HS256 tokens with 24-hour expiry, verified by a request filter on protected endpoints
+- **User-scoped history:** each user sees only their own past predictions
+- **Audit trail:** predictions and SHAP explanations are saved to MySQL, and audit entries are linked by a hash chain so tampering can be detected
+- **Dashboard:** three Chart.js visualizations (approval probability, feature importance, prediction history) and a 13-field loan application form
 
 ---
 
-## User Flow
+## Architecture
 
-### 1. Sign Up
-```
-User enters: Name, Email, Password
-↓
-POST /api/auth/register
-↓
-Server: Generates UUID, hashes password with salt, stores in memory
-↓
-Returns: userId, JWT access token
-↓
-Frontend: Stores token in localStorage, redirects to dashboard
+```mermaid
+flowchart LR
+    A["React Frontend<br/>:5173"] -- "HTTP + Bearer JWT" --> B["Spring Boot API<br/>:8080/api"]
+    B -- "HTTP JSON" --> C["FastAPI ML Service<br/>:5000"]
+    B --> D[("MySQL<br/>credit_scoring")]
 ```
 
-### 2. Login
-```
-User enters: Email, Password
-↓
-POST /api/auth/login
-↓
-Server: Looks up account, verifies password hash
-↓
-Returns: JWT token
-↓
-Frontend: Stores token, enables authenticated requests
-```
+| Service | Folder | Responsibility |
+|---|---|---|
+| Frontend | `FrontEnd/clearscore/` | UI, auth screens, loan form, charts, token storage |
+| Backend | `Backend/LMS/proj/` | Authentication, request validation, calling the ML service, persistence, audit log |
+| ML service | `Backend/api/` | Feature engineering, XGBoost prediction, SHAP explanations, risk scoring |
 
-### 3. Loan Prediction
-```
-User fills form with: name, email, income, creditAmount, loanTerm, creditScore, age, employment, region, etc.
-↓
-POST /api/loan/apply + Authorization: Bearer <JWT>
-↓
-Spring Backend:
-  1. Extracts userId from JWT
-  2. Creates LoanApplicant/LoanApplication record
-  3. Calls Python ML service with loan data
-  4. Receives: decision, probability, risk_score, feature_importance, etc.
-  5. Saves CreditDecision + SHAP explanations to database
-  6. Logs to audit trail with hash-chain integrity
-↓
-Returns: Complete prediction with explanations and charts
-↓
-Frontend: Displays result with visualizations and history
-```
+### Backend components
 
-### 4. History Retrieval
-```
-User views "Recent checks" section
-↓
-GET /api/loan/history/me + Authorization: Bearer <JWT>
-↓
-Server: Returns list of user's past predictions (sorted by date)
-↓
-Frontend: Displays in table with links to previous decisions
-```
+| Component | Role |
+|---|---|
+| `AuthService` | User registration and login, salted SHA-256 password hashing |
+| `JwtTokenService` | HS256 token generation and verification |
+| `JwtAuthFilter` | Verifies the Bearer token and attaches the user ID to the request |
+| `PredictionService` | HTTP client for the Python ML service |
+| `LoanController` | REST endpoints for loan predictions and history |
 
 ---
 
-## Technology Stack
+## API
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Frontend | React | 18.x |
-| Build Tool | Vite | 8.x |
-| Visualizations | Chart.js | 4.x |
-| HTTP Client | Axios | Latest |
-| Backend | Spring Boot | 4.0.6 |
-| Java Version | OpenJDK | 21 |
-| ORM | Hibernate/JPA | 7.2.12 |
-| Database | MySQL | 8.0.44 |
-| ML Framework | XGBoost | Via pickle |
-| Explainability | SHAP | Via pickle |
-| API Server | FastAPI | Latest |
-| Auth Protocol | JWT (HS256) | Custom implementation |
+### Spring Boot (`http://localhost:8080/api`)
 
----
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/auth/register` | No | Create an account, returns `userId` and a JWT |
+| POST | `/auth/login` | No | Log in, returns a JWT |
+| POST | `/loan/apply` | Bearer JWT | Submit an application, returns decision, probability, risk score, and SHAP feature importance |
+| GET | `/loan/history/me` | Bearer JWT | List the current user's past predictions, newest first |
 
-## Testing & Validation
+### ML service (`http://localhost:5000`)
 
-### ✅ Verified Components
-1. **Python ML Service**: 
-   - Loads model, explainer, preprocessing from pickle ✅
-   - `/health` endpoint responds with model status ✅
-   - Can receive loan payloads and return predictions ✅
-
-2. **Spring Backend**:
-   - Compiles without errors ✅
-   - Connects to MySQL database ✅
-   - Initializes Hibernate ORM ✅
-   - JWT filter logs configuration ✅
-   - Tomcat starts on port 8080 ✅
-
-3. **React Frontend**:
-   - Builds with Vite successfully ✅
-   - Loads at http://localhost:5173 ✅
-   - Shows authentication UI ✅
-   - Displays loan form with all 13 fields ✅
-   - Ready for user interaction ✅
-
-### 🔄 Integration Testing (In Progress)
-- User registration: Tested (working - memory storage functional)
-- User login: Requires CORS/header validation
-- Loan prediction: Pending successful auth
-- Chart rendering: Ready once data flows through
-- History display: Database schema ready
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/predict` | Returns prediction, probability, risk score, and top 5 SHAP features |
+| GET | `/health` | Reports whether the model, explainer, and preprocessing are loaded |
 
 ---
 
-## Quick Start Commands
+## How a prediction works
 
-### Terminal 1: Python ML Service
+1. The user submits the loan form from the React app with their JWT.
+2. `JwtAuthFilter` verifies the token and extracts the user ID.
+3. The backend saves the applicant and application records.
+4. `PredictionService` sends the loan data to the FastAPI service.
+5. FastAPI engineers features, runs the XGBoost model, and computes SHAP values.
+6. The backend saves the decision and SHAP explanations to MySQL and appends a hash-chained audit entry.
+7. The frontend shows the result with charts and adds it to the user's history.
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Java 21 and Maven
+- Python 3.10+
+- Node.js 18+
+- MySQL 8
+
+### 1. Database
+
+Create a MySQL database named `credit_scoring`. Hibernate creates the tables on first start. Set your database credentials in the backend's `application.properties`.
+
+### 2. ML service
+
 ```bash
 cd Backend/api
+pip install -r requirements.txt   # or install the dependencies listed in this folder
 python -m uvicorn app:app --reload --port 5000
 ```
 
-### Terminal 2: Spring Backend
+Check it: `GET http://localhost:5000/health`
+
+### 3. Backend
+
 ```bash
 cd Backend/LMS/proj
+mvn package
 java -jar target/proj-0.0.1-SNAPSHOT.jar
 ```
 
-### Terminal 3: React Frontend
+### 4. Frontend
+
 ```bash
 cd FrontEnd/clearscore
+npm install
 npm run dev
 ```
 
-Then navigate to: **http://localhost:5173**
+Open `http://localhost:5173`, register a new account, and submit a loan application.
 
 ---
 
-## Key Features Implemented
+## Tech stack
 
-### Authentication & Security
-✅ JWT-based access control (24-hour expiry)
-✅ SHA-256 password hashing with per-user salt
-✅ Bearer token verification on protected endpoints
-✅ Request attribute injection for user ID tracking
-✅ Audit trail logging with hash-chain integrity
-
-### API Design
-✅ RESTful endpoints with proper HTTP methods
-✅ JSON request/response bodies
-✅ Error handling with meaningful messages
-✅ CORS configuration for frontend access
-✅ Consistent DTO contracts
-
-### User Experience
-✅ Responsive dark-themed UI
-✅ Real-time form validation
-✅ Chart visualizations (Doughnut, Bar, Line)
-✅ Prediction history tracking
-✅ User-scoped data isolation
-
-### ML Integration
-✅ XGBoost model predictions
-✅ SHAP feature importance explanations
-✅ Risk scoring (0-100 scale)
-✅ Affordability calculations
-✅ Decision reasoning narratives
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Chart.js 4, Axios |
+| Backend | Spring Boot 4.0.6, Java 21, Hibernate/JPA, MySQL 8 |
+| ML service | FastAPI, XGBoost, SHAP |
+| Auth | JWT (HS256), custom implementation |
 
 ---
 
-## Deployment Ready
+## Known limitations
 
-### What's Included
-- ✅ Frontend build artifacts (optimized for production)
-- ✅ Backend JAR executable
-- ✅ Python service with all dependencies
-- ✅ Database schema (auto-created by Hibernate)
-- ✅ Configuration files (application.properties)
+This is a prototype. These are the gaps I know about:
 
-### For Presentation
-1. Start the three services in separate terminals
-2. Open http://localhost:5173 in browser
-3. **Demo User Credentials** (pre-registered):
-   - Email: `test@example.com`
-   - Password: `password123`
-4. Or create new test account during demo
-5. Fill loan form and see predictions with explanations
+- **Accounts are stored in memory.** Registered users are lost when the backend restarts, so persisting users in MySQL is the first fix needed.
+- **Password hashing is salted SHA-256.** It is fast to brute-force, so it should be replaced with bcrypt or Argon2.
+- **The JWT secret is a development value.** It should come from an environment variable, and CORS should be restricted to the frontend origin.
+- **No rate limiting** on any endpoint.
+- **Model files are static pickles** with no versioning or performance monitoring.
+- **Error handling is coarse.** Validation errors and system errors are not clearly separated.
+- **Logging is basic** file logging with no structured output.
 
 ---
 
-## Known Limitations (Dev/Demo)
+## Roadmap
 
-⚠️ **In-Memory Authentication**: Accounts stored in memory, not persisted across restarts
-⚠️ **Development JWT Secret**: Should be environment variable in production
-⚠️ **CORS**: Currently permissive, should be restricted to frontend domain
-⚠️ **Error Handling**: Could be more granular (validation errors vs system errors)
-⚠️ **API Rate Limiting**: Not implemented (add for production)
-⚠️ **Logging**: Basic file logging, no structured JSON logs
-⚠️ **Model Updates**: Model files are static pickles, no versioning system
-
----
-
-## Next Steps for Production
-
-1. **Persistence Layer**
-   - Replace in-memory auth with database
-   - Implement user entity with password_hash column
-   - Add refresh tokens for long sessions
-
-2. **Security Hardening**
-   - Move secrets to environment variables
-   - Implement rate limiting (Redis/Spring Cloud Config)
-   - Add request signing for API calls
-   - Implement HTTPS/TLS
-
-3. **Model Management**
-   - Version the ML model files
-   - Implement A/B testing for new models
-   - Add model performance monitoring
-
-4. **Observability**
-   - Structured logging (JSON format)
-   - Metrics (Prometheus/Micrometer)
-   - Distributed tracing (Spring Cloud Sleuth)
-   - Application performance monitoring
-
-5. **Deployment**
-   - Docker containerization
-   - Kubernetes deployment manifests
-   - CI/CD pipeline (GitHub Actions/GitLab CI)
-   - Load balancing across service instances
-
----
-
-## Summary
-
-**The ClearScore-DevNova loan eligibility checker is ready for demonstration.** All three components (React frontend, Spring backend, Python ML service) are deployed, running, and can communicate with each other. Users can sign up, log in with JWT authentication, submit loan applications, receive AI-powered predictions with explainability insights, and view their prediction history. The system demonstrates a modern microservices architecture with proper separation of concerns between the UI layer, API layer, and ML inference layer.
+- [ ] Move users into MySQL with a `password_hash` column, and add refresh tokens
+- [ ] Replace SHA-256 with bcrypt or Argon2
+- [ ] Move secrets to environment variables and restrict CORS
+- [ ] Add rate limiting
+- [ ] Version model artifacts and track model performance
+- [ ] Add structured logging and metrics
+- [ ] Add Docker Compose for one-command startup
+- [ ] Add CI with automated tests
